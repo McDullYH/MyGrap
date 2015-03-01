@@ -52,3 +52,12 @@ docs/_build/
 
 # PyBuilder
 target/
+
+
+# for vim
+*.swp
+
+
+#
+settings.py
+test*.py
