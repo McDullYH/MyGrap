@@ -31,10 +31,11 @@ def get_page(url,proxies=None,save_file_name=None):
     while True:
         try:
             page = ss.get(url,proxies=proxies)
+            #page = ss.get('http://detail.tmall.com/item.htm?id=40080964293&rn=49360c0498beab7eeade354f6b8f29de&abbucket=5',proxies=proxies)
             print page
             if page.status_code==200:
                 if save_file_name:
-                    with codecs.open(save_file_name,'w',encoding='gbk') as f:
+                    with codecs.open(save_file_name,'w',encoding='utf-8') as f:
                         f.write(page.text)
                 return page.text
         except Exception,e:
@@ -44,15 +45,17 @@ def start_to_grap(url_list):
     i=0
     for url in url_list:
         i=i+1
-        #grap(url,save_file_name= '%d.html' % i )
-        grap(url)
+        grap(url,save_file_name= '%d.html' % i )
+        #grap(url)
 
 def grap(url,save_file_name=None):
     while True:
-        page=get_page(url,save_file_name=save_file_name)
+        #page=get_page(url, save_file_name=save_file_name)
+        page=get_page(url, proxies=proxies, save_file_name=save_file_name)
         soup = bs(page)
         thing_list = soup.find('div',class_='J_TItems') 
         shop_info=soup.find('div',id='LineZing')
+        # 这个div 很关键，如果是宝贝页面的话就包含宝贝的id，这里叫item-id，否则只会包含shopid
         if thing_list != None and shop_info != None:
             break
         else:
@@ -61,6 +64,8 @@ def grap(url,save_file_name=None):
     shop_id=int(shop_info.get('shopid'))
     if not Shop.select().where(Shop.id == shop_id).exists():
         shop=Shop.create(id=shop_id,url=url)
+    else:
+        shop=Shop.select().where(Shop.id == shop_id)
 
     
     things=Thing.select()
@@ -86,7 +91,7 @@ def grap(url,save_file_name=None):
                 q=Thing.update(current_price=price,current_describe=describe,update_time=time_now).where(Thing.id==thing_id)
                 q.execute()
                 mail_content_dict={'id':thing_id,'describe':describe,'old_price':thing.current_price,'new_price':price}
-                #send_thing_price_changed_email(mail_content_dict)
+                send_thing_price_changed_email(mail_content_dict)
         else:
             print "new thing insert!"
             thing=Thing.create(id=thing_id,
@@ -95,7 +100,7 @@ def grap(url,save_file_name=None):
                     update_time=time_now,
                     shop=shop)
             mail_content_dict={'id':thing_id,'describe':describe,'old_price':0.0,'new_price':price}
-            #send_thing_price_changed_email(mail_content_dict)
+            send_thing_price_changed_email(mail_content_dict)
             
 
 
@@ -158,13 +163,28 @@ url_list = ('http://liangpinpuzi.tmall.com/category.htm',
             'http://airland.tmall.com/category.htm',
             'http://cheers.tmall.com/category.htm',)
 
+
+#url_list = ('http://liangpinpuzi.tmall.com/search.htm',
+#            'http://airland.tmall.com/search.htm',
+#            'http://cheers.tmall.com/search.htm',)
+
+#url_list = ('http://liangpinpuzi.tmall.com/',
+#            'http://airland.tmall.com/',
+#            'http://cheers.tmall.com/',)
+
+# 还有一种是 http://detail.tmall.com/item.htm?id=40080964293&rn=49360c0498beab7eeade354f6b8f29de&abbucket=5
+# 还有一种是 http://detail.tmall.com/item.htm?id=40080964293&rn=49360c0498beab7eeade354f6b8f29de&abbucket=5
+# 这个id就是data-id，也就是itemid
+
+# shopid 不同于 sellid 
+
 if __name__=='__main__':
     #drop_tables()
     #create_tables()
     while True:
         start_to_grap(url_list)
-        print 'sleep 20s'
-        sleep(20)
+        print 'sleep 7s'
+        sleep(7)
 
 
 
